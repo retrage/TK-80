@@ -32,17 +32,9 @@
 #define D_REG reg[(opcode&0x38)>>3]
 #define M_REG (reg[0x04]<<4)+reg[0x05]
 
-class cpu {
-public:
-    memory mem;
-    void execute();
-
-private:
-    uint16_t pc;
-    uint16_t sp;
-    uint8_t reg[8];
-    void setFlag(uint16_t data);
-};
+cpu::cpu() {
+    pc = 0x8200;
+}
 
 void cpu::setFlag(uint16_t data) {
     if ((data&0x100)>>8) {
@@ -132,14 +124,14 @@ void cpu::execute() {
         case 0x73:
         case 0x74:
         case 0x75:
-        case 0x77: [mem write:M_REG with:S_REG]; pc++; break;
+        case 0x77: mem.write(M_REG, S_REG); pc++; break;
             //MOV r, M 01DDD110
         case 0x4e:
         case 0x56:
         case 0x5e:
         case 0x66:
         case 0x6e:
-        case 0x7e: D_REG=[mem read:M_REG]; pc++; break;
+        case 0x7e: D_REG=mem.read(M_REG); pc++; break;
             //HLT
         case 0x76: printf("HLT\n"); pc++; break;
             //MVI r, B2
@@ -149,9 +141,9 @@ void cpu::execute() {
         case 0x1e:
         case 0x26:
         case 0x2e:
-        case 0x3e: D_REG=[mem read:pc+1]; pc=pc+2; break;
+        case 0x3e: D_REG=mem.read(pc+1); pc=pc+2; break;
             //MVI M, B2
-        case 0x36: [mem write:M_REG with:[mem read:pc+1]]; pc=pc+2; break;
+        case 0x36: mem.write(M_REG, mem.read(pc+1)); pc=pc+2; break;
             //INR r (SUB=0)
         case 0x04:
         case 0x0c:
@@ -168,8 +160,8 @@ void cpu::execute() {
             break;
             //INR M
         case 0x34:
-            tmp1=[mem read:M_REG]+0x01;
-            [mem write:M_REG with:tmp1&0x0f];
+            tmp1=mem.read(M_REG)+0x01;
+            mem.write(M_REG, tmp1&0x0f);
             setFlag(tmp1);
             FLAG=RESET_SUB;
             pc++;
@@ -190,8 +182,8 @@ void cpu::execute() {
             break;
             //DCR M
         case 0x35:
-            tmp1=[mem read:M_REG]-0x01;
-            [mem write:M_REG with:tmp1&0x0f];
+            tmp1=mem.read(M_REG)-0x01;
+            mem.write(M_REG, tmp1&0x0f);
             setFlag(tmp1);
             FLAG=SET_SUB;
             pc++;
@@ -212,7 +204,7 @@ void cpu::execute() {
             break;
             //ADD M
         case 0x86:
-            tmp1=reg[0x07]+[mem read:M_REG];
+            tmp1=reg[0x07]+mem.read(M_REG);
             reg[0x07]=tmp1&0x0f;
             setFlag(tmp1);
             FLAG=RESET_SUB;
@@ -234,7 +226,7 @@ void cpu::execute() {
             break;
             //ADC M
         case 0x8e:
-            tmp1=reg[0x07]+[mem read:M_REG]+(reg[0x07]&0x10>>4);
+            tmp1=reg[0x07]+mem.read(M_REG)+(reg[0x07]&0x10>>4);
             reg[0x07]=tmp1&0x0f;
             setFlag(tmp1);
             FLAG=RESET_SUB;
@@ -256,7 +248,7 @@ void cpu::execute() {
             break;
             //SUB M
         case 0x96:
-            tmp1=reg[0x07]-[mem read:M_REG];
+            tmp1=reg[0x07]-mem.read(M_REG);
             reg[0x07]=tmp1&0x0f;
             setFlag(tmp1);
             FLAG=SET_SUB;
@@ -278,7 +270,7 @@ void cpu::execute() {
             break;
             //SBB M
         case 0x9e:
-            tmp1=reg[0x07]-[mem read:M_REG]-(reg[0x07]&0x10>>4);
+            tmp1=reg[0x07]-mem.read(M_REG)-(reg[0x07]&0x10>>4);
             reg[0x07]=tmp1&0x0f;
             setFlag(tmp1);
             FLAG=SET_SUB;
@@ -300,7 +292,7 @@ void cpu::execute() {
             break;
             //ANA M
         case 0xa6:
-            tmp1=reg[0x07]&[mem read:M_REG];
+            tmp1=reg[0x07]&mem.read(M_REG);
             reg[0x07]=tmp1&0x0f;
             setFlag(tmp1);
             FLAG=RESET_C; //?
@@ -322,7 +314,7 @@ void cpu::execute() {
             break;
             //XRA M
         case 0xae:
-            tmp1=reg[0x07]^[mem read:M_REG];
+            tmp1=reg[0x07]^mem.read(M_REG);
             reg[0x07]=tmp1&0x0f;
             setFlag(tmp1);
             FLAG=RESET_C;
@@ -344,7 +336,7 @@ void cpu::execute() {
             break;
             //ORA M
         case 0xb6:
-            tmp1=reg[0x07]|[mem read:M_REG];
+            tmp1=reg[0x07]|mem.read(M_REG);
             reg[0x07]=tmp1&0x0f;
             setFlag(tmp1);
             FLAG=RESET_C;
@@ -365,14 +357,14 @@ void cpu::execute() {
             break;
             //CMP M
         case 0xbe:
-            tmp1=reg[0x07]-[mem read:M_REG];
+            tmp1=reg[0x07]-mem.read(M_REG);
             setFlag(tmp1);
             FLAG=SET_SUB;
             pc++;
             break;
             //ADI B2
         case 0xc6:
-            tmp1=reg[0x07]+[mem read:pc+1];
+            tmp1=reg[0x07]+mem.read(pc+1);
             reg[0x07]=tmp1&0x0f;
             setFlag(tmp1);
             FLAG=RESET_SUB;
@@ -380,7 +372,7 @@ void cpu::execute() {
             break;
             //ACI B2
         case 0xce:
-            tmp1=reg[0x07]+[mem read:pc+1]+((FLAG&0x10)>>4);
+            tmp1=reg[0x07]+mem.read(pc+1)+((FLAG&0x10)>>4);
             reg[0x07]=tmp1&0x0f;
             setFlag(tmp1);
             FLAG=RESET_SUB;
@@ -388,7 +380,7 @@ void cpu::execute() {
             break;
             //SUI B2
         case 0xd6:
-            tmp1=reg[0x07]-[mem read:pc+1];
+            tmp1=reg[0x07]-mem.read(pc+1);
             reg[0x07]=tmp1&0x0f;
             setFlag(tmp1);
             FLAG=SET_SUB;
@@ -396,35 +388,35 @@ void cpu::execute() {
             break;
             //SBI B2
         case 0xde:
-            tmp1=reg[0x07]-[mem read:pc+1]-((FLAG&0x10)>>4);
+            tmp1=reg[0x07]-mem.read(pc+1)-((FLAG&0x10)>>4);
             reg[0x07]=tmp1&0x0f;
             FLAG=SET_SUB;
             pc=pc+2;
             break;
             //ANI B2
         case 0xe6:
-            tmp1=reg[0x07]&[mem read:pc+1];
+            tmp1=reg[0x07]&mem.read(pc+1);
             reg[0x07]=tmp1&0x0f;
             FLAG=RESET_C;
             pc=pc+2;
             break;
             //XRI B2
         case 0xee:
-            tmp1=reg[0x07]^[mem read:pc+1];
+            tmp1=reg[0x07]^mem.read(pc+1);
             reg[0x07]=tmp1&0x0f;
             FLAG=RESET_C;
             pc=pc+2;
             break;
             //ORI B2
         case 0xf6:
-            tmp1=reg[0x07]|[mem read:pc+1];
+            tmp1=reg[0x07]|mem.read(pc+1);
             reg[0x07]=tmp1&0x0f;
             FLAG=RESET_C;
             pc=pc+2;
             break;
             //CPI B2
         case 0xfe:
-            tmp1=reg[0x07]-[mem read:pc+1];
+            tmp1=reg[0x07]-mem.read(pc+1);
             FLAG=SET_SUB;
             pc=pc+2;
             break;//?
@@ -486,13 +478,13 @@ void cpu::execute() {
             //NOP
         case 0x00: pc++; break;
             //LXI B, B2B3
-        case 0x01: reg[0x01]=[mem read:pc+1]; reg[0x00]=[mem read:pc+2]; pc=pc+3; break;
+        case 0x01: reg[0x01]=mem.read(pc+1); reg[0x00]=mem.read(pc+2); pc=pc+3; break;
             //LXI D, B2B3
-        case 0x11: reg[0x03]=[mem read:pc+1]; reg[0x02]=[mem read:pc+2]; pc=pc+3; break;
+        case 0x11: reg[0x03]=mem.read(pc+1); reg[0x02]=mem.read(pc+2); pc=pc+3; break;
             //LXI H, B2B3
-        case 0x21: reg[0x05]=[mem read:pc+1]; reg[0x04]=[mem read:pc+2]; pc=pc+3; break;
+        case 0x21: reg[0x05]=mem.read(pc+1); reg[0x04]=mem.read(pc+2); pc=pc+3; break;
             //LXI SP, B2B3
-        case 0x31: reg[0x07]=[mem read:pc+1]; reg[0x06]=[mem read:pc+2]; pc=pc+3; break;
+        case 0x31: reg[0x07]=mem.read(pc+1); reg[0x06]=mem.read(pc+2); pc=pc+3; break;
             //DAD B
         case 0x09:
             tmp3=(reg[0x04]<<8)+reg[0x05]+(reg[0x00]<<8)+reg[0x01];
@@ -530,21 +522,21 @@ void cpu::execute() {
             pc++;
             break;
             //STAX B
-        case 0x02: [mem write:((reg[0x00]<<8)+reg[0x01]) with:reg[0x07]]; pc++; break;
+        case 0x02: mem.write(((reg[0x00]<<8)+reg[0x01]), reg[0x07]); pc++; break;
             //STAX D
-        case 0x12: [mem write:((reg[0x02]<<8)+reg[0x03]) with:reg[0x07]]; pc++; break;
+        case 0x12: mem.write(((reg[0x02]<<8)+reg[0x03]), reg[0x07]); pc++; break;
             //LDAX B
-        case 0x0a: reg[0x07]=[mem read:((reg[0x00]<<8)+reg[0x01])]; pc++; break;
+        case 0x0a: reg[0x07]=mem.read(((reg[0x00]<<8)+reg[0x01])); pc++; break;
             //LDAX D
-        case 0x1a: reg[0x07]=[mem read:((reg[0x02]<<8)+reg[0x03])]; pc++; break;
+        case 0x1a: reg[0x07]=mem.read(((reg[0x02]<<8)+reg[0x03])); pc++; break;
             //SHLD B3B2
-        case 0x22: [mem write:([mem read:pc+2]<<8)+[mem read:pc+1] with:reg[0x05]]; [mem write:([mem read:pc+2]<<8)+([mem read:pc+1]+1) with:reg[0x05]]; pc=pc+3; break;
+        case 0x22: mem.write((mem.read(pc+2)<<8)+mem.read(pc+1), reg[0x05]); mem.write((mem.read(pc+2)<<8)+(mem.read(pc+1)+1), reg[0x05]); pc=pc+3; break;
             //LHLD B3B2
-        case 0x2a: [mem write:([mem read:pc+2]<<8)+[mem read:pc+1] with:reg[0x05]]; reg[0x04]=([mem read:pc+2]<<8)+([mem read:pc+1]+1); pc=pc+3; break;
+        case 0x2a: mem.write((mem.read(pc+2)<<8)+mem.read(pc+1), reg[0x05]); reg[0x04]=(mem.read(pc+2)<<8)+(mem.read(pc+1)+1); pc=pc+3; break;
             //STA B3B2
-        case 0x32: [mem write:([mem read:pc+2]<<8)+[mem read:pc+1] with:reg[0x07]]; pc=pc+3; break;
+        case 0x32: mem.write((mem.read(pc+2)<<8)+mem.read(pc+1), reg[0x07]); pc=pc+3; break;
             //LDA B3B2
-        case 0x3a: reg[0x07]=([mem read:pc+2]<<8)+[mem read:pc+1]; pc=pc+3; break;
+        case 0x3a: reg[0x07]=(mem.read(pc+2)<<8)+mem.read(pc+1); pc=pc+3; break;
             //INX B
         case 0x03: tmp1=(reg[0x00]<<8)+reg[0x01]+1; reg[0x00]=tmp1>>8; reg[0x01]=tmp1&0x0f; pc++; break;
             //INX D
@@ -562,11 +554,11 @@ void cpu::execute() {
             //DCX SP
         case 0x3b: sp--; pc++; break;
             //OUT B2
-        case 0xd3: printf("OUT\t%x\n", [mem read:i+1]); pc++; break;
+        case 0xd3: printf("OUT\t%x\n", mem.read(i+1)); pc++; break;
             //IN B2
-        case 0xdb: printf("IN\t%x\n", [mem read:i+1]); pc++; break;
+        case 0xdb: printf("IN\t%x\n", mem.read(i+1)); pc++; break;
             //HTHL
-        case 0xe3: tmp1=[mem read:sp]; [mem write:sp with:reg[0x05]]; reg[0x05]=tmp1; tmp2=[mem read:sp+1]; [mem write:sp+1 with:reg[0x04]]; reg[0x04]=tmp2; pc++; break;
+        case 0xe3: tmp1=mem.read(sp); mem.write(sp, reg[0x05]); reg[0x05]=tmp1; tmp2=mem.read(sp+1); mem.write(sp+1, reg[0x04]); reg[0x04]=tmp2; pc++; break;
             //XCHG
         case 0xeb: tmp1=reg[0x05]; reg[0x05]=reg[0x03]; reg[0x03]=tmp1; tmp2=reg[0x04]; reg[0x05]=reg[0x02]; reg[0x02]=tmp2; pc++; break;
             //DI
@@ -574,58 +566,58 @@ void cpu::execute() {
             //EI
         case 0xfb: printf("EI\n"); pc++; break;
             //PUSH B
-        case 0xc5: [mem write:sp-1 with:reg[0x00]]; [mem write:sp-2 with:reg[0x01]]; sp=sp-2; pc++; break;
+        case 0xc5: mem.write(sp-1, reg[0x00]); mem.write(sp-2, reg[0x01]); sp=sp-2; pc++; break;
             //PUSH D
-        case 0xd5: [mem write:sp-1 with:reg[0x02]]; [mem write:sp-2 with:reg[0x03]]; sp=sp-2; pc++; break;
+        case 0xd5: mem.write(sp-1, reg[0x02]); mem.write(sp-2, reg[0x03]); sp=sp-2; pc++; break;
             //PUSH H
-        case 0xe5: [mem write:sp-1 with:reg[0x04]]; [mem write:sp-2 with:reg[0x05]]; sp=sp-2; pc++; break;
+        case 0xe5: mem.write(sp-1, reg[0x04]); mem.write(sp-2, reg[0x05]); sp=sp-2; pc++; break;
             //PUSH PSW
-        case 0xf5: [mem write:sp-1 with:reg[0x07]]; [mem write:sp-2 with:reg[0x06]]; sp=sp-2; pc++; break; //?
+        case 0xf5: mem.write(sp-1, reg[0x07]); mem.write(sp-2, reg[0x06]); sp=sp-2; pc++; break; //?
             //POP B
-        case 0xc1: reg[0x01]=[mem read:sp]; reg[0x00]=[mem read:sp+1]; sp=sp+2; pc++; break;
+        case 0xc1: reg[0x01]=mem.read(sp); reg[0x00]=mem.read(sp+1); sp=sp+2; pc++; break;
             //POP D
-        case 0xd1: reg[0x03]=[mem read:sp]; reg[0x02]=[mem read:sp+1]; sp=sp+2; pc++; break;
+        case 0xd1: reg[0x03]=mem.read(sp); reg[0x02]=mem.read(sp+1); sp=sp+2; pc++; break;
             //POP H
-        case 0xe1: reg[0x05]=[mem read:sp]; reg[0x04]=[mem read:sp+1]; sp=sp+2; pc++; break;
+        case 0xe1: reg[0x05]=mem.read(sp); reg[0x04]=mem.read(sp+1); sp=sp+2; pc++; break;
             //POP PSW
-        case 0xf1: reg[0x06]=[mem read:sp]; reg[0x07]=[mem read:sp+1]; sp=sp+2; pc++; break; //?
+        case 0xf1: reg[0x06]=mem.read(sp); reg[0x07]=mem.read(sp+1); sp=sp+2; pc++; break; //?
             //PCHL
         case 0xe9: pc=(reg[0x04]<<8)+reg[0x05]; pc++; break; //?
             //SPHL
         case 0xf9: sp=(reg[0x04]<<8)+reg[0x05]; pc++; break;
             //JMP B3B2
-        case 0xc3: pc=([mem read:pc+2]<<8)+[mem read:pc+1]; pc++; break;
-            //pc=([mem read:pc+1]<<8)+[mem read:pc+2]; break;
+        case 0xc3: pc=(mem.read(pc+2)<<8)+mem.read(pc+1); pc++; break;
+            //pc=(mem.read(pc+1)<<8)+mem.read(pc+2); break;
             //JNZ B3B2
-        case 0xc2: pc = !GET_Z ? ([mem read:pc+2]<<0x08)+[mem read:pc+1] : pc+3; break;
+        case 0xc2: pc = !GET_Z ? (mem.read(pc+2)<<0x08)+mem.read(pc+1) : pc+3; break;
             //JZ B3B2
-        case 0xca: pc = GET_Z ? ([mem read:pc+2]<<0x08)+[mem read:pc+1] : pc+3; break;
+        case 0xca: pc = GET_Z ? (mem.read(pc+2)<<0x08)+mem.read(pc+1) : pc+3; break;
             //JNC B3B2
-        case 0xd2: pc = !GET_C ? ([mem read:pc+2]<<0x08)+[mem read:pc+1] : pc+3; break;
+        case 0xd2: pc = !GET_C ? (mem.read(pc+2)<<0x08)+mem.read(pc+1) : pc+3; break;
             //JC B3B2
-        case 0xda: pc = GET_C ? ([mem read:pc+2]<<0x08)+[mem read:pc+1] : pc+3; break;
+        case 0xda: pc = GET_C ? (mem.read(pc+2)<<0x08)+mem.read(pc+1) : pc+3; break;
             //JPO B3B2
-        case 0xe2: pc = !GET_P ? ([mem read:pc+2]<<0x08)+[mem read:pc+1] : pc+3; break;
+        case 0xe2: pc = !GET_P ? (mem.read(pc+2)<<0x08)+mem.read(pc+1) : pc+3; break;
             //JPE B3B2
-        case 0xea: pc = GET_P ? ([mem read:pc+2]<<0x08)+[mem read:pc+1] : pc+3; break;
+        case 0xea: pc = GET_P ? (mem.read(pc+2)<<0x08)+mem.read(pc+1) : pc+3; break;
             //JP B3B2
-        case 0xf2: pc = !GET_S ? ([mem read:pc+2]<<0x08)+[mem read:pc+1] : pc+3; break;
+        case 0xf2: pc = !GET_S ? (mem.read(pc+2)<<0x08)+mem.read(pc+1) : pc+3; break;
             //JM B3B2
-        case 0xfa: pc = GET_S ? ([mem read:pc+2]<<0x08)+[mem read:pc+1] : pc+3; break;
+        case 0xfa: pc = GET_S ? (mem.read(pc+2)<<0x08)+mem.read(pc+1) : pc+3; break;
             //CALL B3B2
         case 0xcd:
-            [mem write:sp-1 with:(pc&0xf0)>>0x08];
-            [mem write:sp-2 with:pc&0x0f];
+            mem.write(sp-1, (pc&0xf0)>>0x08);
+            mem.write(sp-2, pc&0x0f);
             sp=sp-2;
-            pc=([mem read:pc+2]<<0x08)+[mem read:pc+1];
+            pc=(mem.read(pc+2)<<0x08)+mem.read(pc+1);
             break;
             //CNZ B3B2
         case 0xc4:
             if (!GET_Z) {
-                [mem write:sp-1 with:pc>>0x08];
-                [mem write:sp-2 with:pc&0x0f];
+                mem.write(sp-1, pc>>0x08);
+                mem.write(sp-2, pc&0x0f);
                 sp=sp-2;
-                pc=([mem read:pc+2]<<0x08)+[mem read:pc+1];
+                pc=(mem.read(pc+2)<<0x08)+mem.read(pc+1);
             } else {
                 pc=pc+3;
             }
@@ -633,10 +625,10 @@ void cpu::execute() {
             //CN B3B2
         case 0xcc:
             if (GET_Z) {
-                [mem write:sp-1 with:pc>>0x08];
-                [mem write:sp-2 with:pc&0x0f];
+                mem.write(sp-1, pc>>0x08);
+                mem.write(sp-2, pc&0x0f);
                 sp=sp-2;
-                pc=([mem read:pc+2]<<0x08)+[mem read:pc+1];
+                pc=(mem.read(pc+2)<<0x08)+mem.read(pc+1);
             } else {
                 pc=pc+3;
             }
@@ -644,10 +636,10 @@ void cpu::execute() {
             //CNC B3B2
         case 0xd4:
             if (!GET_C) {
-                [mem write:sp-1 with:pc>>0x08];
-                [mem write:sp-2 with:pc&0x0f];
+                mem.write(sp-1, pc>>0x08);
+                mem.write(sp-2, pc&0x0f);
                 sp=sp-2;
-                pc=([mem read:pc+2]<<0x08)+[mem read:pc+1];
+                pc=(mem.read(pc+2)<<0x08)+mem.read(pc+1);
             } else {
                 pc=pc+3;
             }
@@ -655,10 +647,10 @@ void cpu::execute() {
             //CC B3B2
         case 0xdc:
             if (GET_C) {
-                [mem write:sp-1 with:pc>>0x08];
-                [mem write:sp-2 with:pc&0x0f];
+                mem.write(sp-1, pc>>0x08);
+                mem.write(sp-2, pc&0x0f);
                 sp=sp-2;
-                pc=([mem read:pc+2]<<0x08)+[mem read:pc+1];
+                pc=(mem.read(pc+2)<<0x08)+mem.read(pc+1);
             } else {
                 pc=pc+3;
             }
@@ -666,10 +658,10 @@ void cpu::execute() {
             //CP0 B3B2
         case 0xe4:
             if (!GET_P) {
-                [mem write:sp-1 with:pc>>0x08];
-                [mem write:sp-2 with:pc&0x0f];
+                mem.write(sp-1, pc>>0x08);
+                mem.write(sp-2, pc&0x0f);
                 sp=sp-2;
-                pc=([mem read:pc+2]<<0x08)+[mem read:pc+1];
+                pc=(mem.read(pc+2)<<0x08)+mem.read(pc+1);
             } else {
                 pc=pc+3;
             }
@@ -677,10 +669,10 @@ void cpu::execute() {
             //CPE B3B2
         case 0xec:
             if (GET_P) {
-                [mem write:sp-1 with:pc>>0x08];
-                [mem write:sp-2 with:pc&0x0f];
+                mem.write(sp-1, pc>>0x08);
+                mem.write(sp-2, pc&0x0f);
                 sp=sp-2;
-                pc=([mem read:pc+2]<<0x08)+[mem read:pc+1];
+                pc=(mem.read(pc+2)<<0x08)+mem.read(pc+1);
             } else {
                 pc=pc+3;
             }
@@ -688,10 +680,10 @@ void cpu::execute() {
             //CP B3B2
         case 0xf4:
             if (!GET_S) {
-                [mem write:sp-1 with:pc>>0x08];
-                [mem write:sp-2 with:pc&0x0f];
+                mem.write(sp-1, pc>>0x08);
+                mem.write(sp-2, pc&0x0f);
                 sp=sp-2;
-                pc=([mem read:pc+2]<<0x08)+[mem read:pc+1];
+                pc=(mem.read(pc+2)<<0x08)+mem.read(pc+1);
             } else {
                 pc=pc+3;
             }
@@ -699,20 +691,20 @@ void cpu::execute() {
             //CM B3B2
         case 0xfc:
             if (GET_S) {
-                [mem write:sp-1 with:pc>>0x08];
-                [mem write:sp-2 with:pc&0x0f];
+                mem.write(sp-1, pc>>0x08);
+                mem.write(sp-2, pc&0x0f);
                 sp=sp-2;
-                pc=([mem read:pc+2]<<0x08)+[mem read:pc+1];
+                pc=(mem.read(pc+2)<<0x08)+mem.read(pc+1);
             } else {
                 pc=pc+3;
             }
             break;
             //RET
-        case 0xc9: pc=([mem read:sp+1]<<8)+[mem read:sp]; sp=sp+2; break;
+        case 0xc9: pc=(mem.read(sp+1)<<8)+mem.read(sp); sp=sp+2; break;
             //RNZ
         case 0xc0:
             if (!GET_Z) {
-                pc=([mem read:sp+1]<<8)+[mem read:sp]; sp=sp+2;
+                pc=(mem.read(sp+1)<<8)+mem.read(sp); sp=sp+2;
             } else {
                 pc++;
             }
@@ -720,7 +712,7 @@ void cpu::execute() {
             //RZ
         case 0xc8:
             if (GET_Z) {
-                pc=([mem read:sp+1]<<8)+[mem read:sp]; sp=sp+2;
+                pc=(mem.read(sp+1)<<8)+mem.read(sp); sp=sp+2;
             } else {
                 pc++;
             }
@@ -728,7 +720,7 @@ void cpu::execute() {
             //RNC
         case 0xd0:
             if (!GET_C) {
-                pc=([mem read:sp+1]<<8)+[mem read:sp]; sp=sp+2;
+                pc=(mem.read(sp+1)<<8)+mem.read(sp); sp=sp+2;
             } else {
                 pc++;
             }
@@ -736,7 +728,7 @@ void cpu::execute() {
             //RC
         case 0xd8:
             if (GET_C) {
-                pc=([mem read:sp+1]<<8)+[mem read:sp]; sp=sp+2;
+                pc=(mem.read(sp+1)<<8)+mem.read(sp); sp=sp+2;
             } else {
                 pc++;
             }
@@ -744,7 +736,7 @@ void cpu::execute() {
             //RPO
         case 0xe0:
             if (!GET_P) {
-                pc=([mem read:sp+1]<<8)+[mem read:sp]; sp=sp+2;
+                pc=(mem.read(sp+1)<<8)+mem.read(sp); sp=sp+2;
             } else {
                 pc++;
             }
@@ -752,7 +744,7 @@ void cpu::execute() {
             //RPE
         case 0xe8:
             if (GET_P) {
-                pc=([mem read:sp+1]<<8)+[mem read:sp]; sp=sp+2;
+                pc=(mem.read(sp+1)<<8)+mem.read(sp); sp=sp+2;
             } else {
                 pc++;
             }
@@ -760,7 +752,7 @@ void cpu::execute() {
             //RP
         case 0xf0:
             if (!GET_S) {
-                pc=([mem read:sp+1]<<8)+[mem read:sp]; sp=sp+2;
+                pc=(mem.read(sp+1)<<8)+mem.read(sp); sp=sp+2;
             } else {
                 pc++;
             }
@@ -768,7 +760,7 @@ void cpu::execute() {
             //RM
         case 0xf8:
             if (GET_S) {
-                pc=([mem read:sp+1]<<8)+[mem read:sp]; sp=sp+2;
+                pc=(mem.read(sp+1)<<8)+mem.read(sp); sp=sp+2;
             } else {
                 pc++;
             }
@@ -782,8 +774,8 @@ void cpu::execute() {
         case 0xef:
         case 0xf7:
         case 0xff:
-            [mem write:sp-1 with:pc>>8];
-            [mem write:sp-2 with:pc&0x0f];
+            mem.write(sp-1, pc>>8);
+            mem.write(sp-2, pc&0x0f);
             sp=sp-2;
             pc=opcode&0x38<<3;
             break;
