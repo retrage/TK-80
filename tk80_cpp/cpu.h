@@ -8,9 +8,9 @@
 
 #include <iostream>
 #include <math.h>
-#include "memory.h"
+//#include "memory.h"
 
-extern memory mem;
+//extern memory mem;
 
 #endif /* defined(__tk80__cpu__) */
 

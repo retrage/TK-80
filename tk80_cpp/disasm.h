@@ -16,9 +16,8 @@
 class disasm {
 public:
     uint16_t pc;
-    memory mem;
+    tk80_mem mem;
     
-    disasm();
     void showasm();
     
 private:
