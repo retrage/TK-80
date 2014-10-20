@@ -19,6 +19,6 @@ public:
     uint8_t array[RAM_END-RAM_BEGIN+1];
     
     uint8_t read(uint16_t addr);
-    void write(uint16_t addr, uint8_t data);
+    bool write(uint16_t addr, uint8_t data);
     bool load(std::string fileName, uint16_t addr);
 };

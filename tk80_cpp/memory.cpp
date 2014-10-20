@@ -12,14 +12,21 @@ uint8_t tk80_mem::read(uint16_t addr) {
     } else {
         data = 0;
     }
+#ifdef DEBUG
     printf("r %4x: %2x\n", addr, data);
+#endif
     return data;
 }
 
-void tk80_mem::write(uint16_t addr, uint8_t data) {
+bool tk80_mem::write(uint16_t addr, uint8_t data) {
     if (addr>=RAM_BEGIN && addr<=RAM_END) {
         array[addr-RAM_BEGIN] = data;
+#ifdef DEBUG
         printf("w %4x: %2x\n", addr, data);
+#endif
+        return true;
+    } else {
+        return false;
     }
 }
 bool tk80_mem::load(std::string fileName, uint16_t addr) {
