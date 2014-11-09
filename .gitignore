@@ -1,1 +1,4 @@
 *.xcodeproj/
+*.o
+a.out
+*.patch
