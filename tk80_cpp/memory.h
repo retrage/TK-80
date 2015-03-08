@@ -1,24 +1,17 @@
-//
-//  memory.h
-//  tk80
-//
-
-#ifndef __tk80__memory__
-#define __tk80__memory__
-
 #include <iostream>
 #include <fstream>
+#include <cstdint>
+#include <map>
 
-#endif /* defined(__tk80__memory__) */
-
-#define RAM_BEGIN 0x0000
-#define RAM_END 0xffff
+//static const size_t RAM_SIZE = 0x10000;
 
 class tk80_mem {
-public:
-    uint8_t array[RAM_END-RAM_BEGIN+1];
-    
-    uint8_t read(uint16_t addr);
-    bool write(uint16_t addr, uint8_t data);
-    bool load(std::string fileName, uint16_t addr);
+    public:
+        uint8_t read(uint16_t addr);
+        void write(uint16_t addr, uint8_t data);
+        bool load(std::ifstream fis);
+        tk80_mem();
+
+    private:
+        std::map<std::uint16_t, std::uint8_t> array;
 };
