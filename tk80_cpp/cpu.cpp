@@ -1,8 +1,3 @@
-//
-//  cpu.cpp
-//  tk80
-//
-
 #include "cpu.h"
 
 #define FLAG reg[0x06]

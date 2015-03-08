@@ -1,22 +1,8 @@
-//
-//  cpu.h
-//  tk80
-//
-
-#ifndef __tk80__cpu__
-#define __tk80__cpu__
-
 #include <iostream>
 #include <math.h>
-//#include "memory.h"
-
-//extern memory mem;
-
-#endif /* defined(__tk80__cpu__) */
 
 class cpu {
 public:
-//    memory mem;
     cpu();
     void execute();
     
