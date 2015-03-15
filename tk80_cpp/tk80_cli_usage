@@ -1,0 +1,25 @@
+
+set_address [val]
+    s [val]
+write_inc [val]
+    w [val]
+read_inc
+    r
+run
+ret
+set_mode {step|auto}
+reset
+load [path]
+store [path]
+
+
+debug:
+print
+    :print_reg [reg]
+        p [reg]
+    :print_mem [address]
+        p [address]
+
+set
+    :set_reg [reg] [val]
+    :set_mem [address] [val]

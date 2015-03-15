@@ -27,11 +27,33 @@
 #define D_REG reg[(opcode&0x38)>>3]
 #define M_REG (reg[0x04]<<4)+reg[0x05]
 
-cpu::cpu() {
-    pc = 0x8200;
+tk80_cpu::tk80_cpu(std::uint16_t pc_addr) {
+    pc = pc_addr;
 }
 
-void cpu::setFlag(uint16_t data) {
+uint16_t tk80_cpu::getpc()
+{
+    return this->pc;
+}
+
+uint16_t tk80_cpu::getsp()
+{
+    return this->sp;
+}
+
+uint8_t tk80_cpu::getreg(int index)
+{
+    try {
+        if(index<0 || index>7)
+            throw index;
+        return this->reg[index];
+    } catch(int ex_index) {
+        printf("Could not get reg at %d\n", ex_index);
+        return 0;
+    }
+}
+
+void tk80_cpu::setFlag(uint16_t data) {
     if ((data&0x100)>>8) {
         FLAG=SET_C;
     } else {
@@ -53,7 +75,7 @@ void cpu::setFlag(uint16_t data) {
     int i, sum;
     sum = 0;
     for (i=0; i<8; i++) {
-        sum =sum + data&(int)pow(2.0, (double)i)>>(i-1);
+        sum = sum + (data & ((int)pow(2.0, (double)i) >> (i-1)));
     }
     
     if (sum%2) {
@@ -63,7 +85,7 @@ void cpu::setFlag(uint16_t data) {
     }
 }
 
-void cpu::execute() {
+void tk80_cpu::execute() {
     int i = 0;
     uint16_t tmp1, tmp2;
     uint32_t tmp3;
