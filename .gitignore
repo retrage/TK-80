@@ -1,4 +1,6 @@
 *.xcodeproj/
 *.o
+*.swp
+*.swo
 a.out
 *.patch
