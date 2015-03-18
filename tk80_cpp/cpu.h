@@ -11,6 +11,7 @@ public:
     tk80_cpu(std::uint16_t pc_addr);
     void execute();
 
+    void setpc(std::uint16_t addr);
     uint16_t getpc();
     uint16_t getsp();
     uint8_t getreg(int index);

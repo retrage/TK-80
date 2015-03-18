@@ -31,6 +31,11 @@ tk80_cpu::tk80_cpu(std::uint16_t pc_addr) {
     pc = pc_addr;
 }
 
+void tk80_cpu::setpc(uint16_t addr)
+{
+    this->pc = addr;
+}
+
 uint16_t tk80_cpu::getpc()
 {
     return this->pc;
@@ -603,7 +608,7 @@ void tk80_cpu::execute() {
             //SPHL
         case 0xf9: sp=(reg[0x04]<<8)+reg[0x05]; pc++; break;
             //JMP B3B2
-        case 0xc3: pc=(mem.read(pc+2)<<8)+mem.read(pc+1); pc++; break;
+        case 0xc3: pc=(mem.read(pc+2)<<8)+mem.read(pc+1); break;
             //pc=(mem.read(pc+1)<<8)+mem.read(pc+2); break;
             //JNZ B3B2
         case 0xc2: pc = !GET_Z ? (mem.read(pc+2)<<0x08)+mem.read(pc+1) : pc+3; break;
