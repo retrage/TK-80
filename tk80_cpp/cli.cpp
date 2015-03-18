@@ -21,17 +21,26 @@ void tk80_cli::write_inc(std::uint8_t data)
     this->cpu.mem.write(this->current_addr, data);
     this->current_addr++;
 }
+
 std::uint8_t tk80_cli::read_inc()
 {
     std::uint8_t data = this->cpu.mem.read(this->current_addr);
-    current_addr++;
+    this->current_addr++;
+    return data;
+}
+
+std::uint8_t tk80_cli::read_dec()
+{
+    std::uint8_t data = this->cpu.mem.read(this->current_addr);
+    this->current_addr--;
     return data;
 }
 
 void tk80_cli::run()
 {
+    this->cpu.setpc(this->current_addr);
     while (1) {
-        this->cpu.execute();
+        this->ret();
         if (this->mode==step_t)
             break;
     }
@@ -39,7 +48,11 @@ void tk80_cli::run()
 
 void tk80_cli::ret()
 {
-    
+    this->cpu.execute();
+    if (this->mode==step_t) {
+        this->current_addr = this->cpu.getpc();
+        std::printf("(%4x %2x)\n", this->cpu.getpc(), this->cpu.getreg(7));
+    }
 }
 void tk80_cli::reset()
 {
@@ -76,7 +89,7 @@ int main(int argc, char *argv[]) {
 
     while(1) {
         std::string str;
-        std::printf("%4x >", cli.current_addr);
+        std::printf("(%4x) ", cli.current_addr);
 
         std::getline(std::cin, str);
 
@@ -98,9 +111,14 @@ int main(int argc, char *argv[]) {
             std::uint8_t data = std::stoi(cmds[1], nullptr, 16);
             cli.write_inc(data);
         
-        } else if(cmds[0]=="read_inc" || cmds[0]=="r") {
+        } else if(cmds[0]=="read_inc" || cmds[0]=="ri") {
             std::uint8_t data = cli.read_inc();
+            std::printf("(%4x %2x)\n", cli.current_addr-1, data);
                 
+        } else if(cmds[0]=="read_dec" || cmds[0]=="rd") {
+            std::uint8_t data = cli.read_dec();
+            std::printf("(%4x %2x)\n", cli.current_addr+1, data);
+
         } else if(cmds[0]=="run") {
             cli.run();
         } else if(cmds[0]=="ret") {
@@ -114,6 +132,9 @@ int main(int argc, char *argv[]) {
         } else if(cmds[0]=="print_reg") {
             
         } else if(cmds[0]=="print_mem") {
+            std::uint16_t addr = std::stoi(cmds[1], nullptr, 16);
+            std::uint8_t data = cli.cpu.mem.read(addr);
+            std::printf("(%4x %2x)\n", addr, data);
         
         } else if(cmds[0]=="quit" || cmds[0]=="q") {
             break;
