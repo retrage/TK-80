@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -31,6 +32,9 @@ class tk80_cli {
         void run();
         void ret();
         void reset();
+
+        bool load_data(std::string path);
+        bool store_data(std::string path, std::uint16_t start_addr, std::uint16_t end_addr);
 
         //std::uint8_t print_reg();
         std::uint8_t print_mem(std::uint16_t addr);

@@ -59,6 +59,88 @@ void tk80_cli::reset()
 
 }
 
+bool tk80_cli::load_data(std::string path)
+{
+    std::ifstream ifs;
+    ifs.open(path, std::ifstream::in|std::ifstream::binary);
+
+    try {
+        if (!ifs)
+            throw path;
+        
+        char start_addr[2], end_addr[2];
+        ifs.read(start_addr, 2);
+        ifs.read(end_addr, 2);
+
+        std::uint16_t addr = (start_addr[0] << 8) | start_addr[1];
+        std::uint16_t e_addr = (end_addr[0] << 8) | end_addr[1];
+
+        for(; addr<=e_addr; addr++) {
+            try {
+                char c;
+                if((c=ifs.get())==EOF)
+                    throw addr;
+                
+                this->cpu.mem.write(addr, c);
+            } catch(std::uint16_t a) {
+                std::cout << "Loading file was stopped at " << a << std::endl;
+                break;
+            }
+        }
+
+        ifs.close();
+        return true;
+
+    } catch (std::string ex_path) {
+        std::cout << "could not open the file: " << ex_path << std::endl;
+        return false;
+    }
+
+}
+
+bool tk80_cli::store_data(std::string path, std::uint16_t start_addr, std::uint16_t end_addr)
+{
+    try {
+        if (!(end_addr>start_addr))
+            throw "end address must be bigger than start address.\n";
+
+        try {
+            std::ofstream ofs;
+            ofs.open(path, std::ofstream::out|std::ofstream::binary);
+            if(!ofs)
+                throw path;
+
+            ofs << (char)(start_addr >> 8);
+            ofs << (char)(start_addr);
+            ofs << (char)(end_addr >> 8);
+            ofs << (char)(end_addr);
+        
+            std::uint8_t sum = 0x00;
+            std::uint16_t addr;
+
+            for (addr=start_addr; addr<=end_addr; addr++) {
+                ofs <<  this->cpu.mem.read(addr);
+                sum += this->cpu.mem.read(addr);
+            }
+
+            ofs << sum;
+
+            // FIXME: delete LF code '0x0a'
+            ofs.close();
+
+        } catch(std::string ex_path) {
+            std::cout << "could not open the file: " << ex_path << std::endl;
+            return false;
+        }
+    
+    } catch(std::string ex_str) {
+        std::cout << ex_str << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
 //std::uint8_t print_reg();
 std::uint8_t tk80_cli::print_mem(std::uint16_t addr)
 {
@@ -83,7 +165,7 @@ std::vector<std::string> split(std::string str) {
 
 int main(int argc, char *argv[]) {
     
-    std::printf("Command-line Interactive TK-80 emulator\n"); 
+    std::printf("Command-line TK-80 emulator\n"); 
     
     tk80_cli cli; 
 
@@ -126,9 +208,13 @@ int main(int argc, char *argv[]) {
         } else if(cmds[0]=="reset") {
             cli.reset();
         } else if(cmds[0]=="load") {
-        
+            cli.load_data(cmds[1]);
+
         } else if(cmds[0]=="store") {
-        
+            std::uint16_t end_addr = std::stoi(cmds[1], nullptr, 16);
+            std::string path = cmds.size() >= 3 ? cmds[2] : "data.bin";
+            cli.store_data(path, cli.current_addr, end_addr);
+
         } else if(cmds[0]=="print_reg") {
             
         } else if(cmds[0]=="print_mem") {
