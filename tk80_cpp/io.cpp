@@ -8,12 +8,18 @@ tk80_io::tk80_io() {
         std::pair<std::uint16_t, dig> dig_p (dig_addr[i], d);
         dig_table.insert(dig_p);
     }
+
+    a_keys = keys::keys(key_addr);
 }
 
 void tk80_io::write(std::uint16_t addr, uint8_t data) {
 
     if (this->dig_table.find(addr)!=dig_table.end()) {
         this->dig_table[addr].set_data(data);
+    }
+
+    if (addr==key_addr) {
+        this->a_keys.set_data(data);
     }
 
     this->tk80_mem::write(addr, data);
@@ -25,6 +31,8 @@ std::uint8_t tk80_io::read(uint16_t addr) {
 
     if (this->dig_table.find(addr)!=dig_table.end()) {
         res = this->dig_table[addr].get_data();
+    } else if (addr==key_addr) {
+        res = this->a_keys::get_data();
     } else {
         res = this->tk80_mem::read(addr);
     }
