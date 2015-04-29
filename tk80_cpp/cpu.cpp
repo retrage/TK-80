@@ -576,9 +576,9 @@ void tk80_cpu::execute() {
             //DCX SP
         case 0x3b: sp--; pc++; break;
             //OUT B2
-        case 0xd3: printf("OUT\t%x\n", mem.read(i+1)); pc++; break;
+        case 0xd3: printf("OUT\t%x\n", mem.read(i+1)); pc+=2; break;
             //IN B2
-        case 0xdb: printf("IN\t%x\n", mem.read(i+1)); pc++; break;
+        case 0xdb: printf("IN\t%x\n", mem.read(i+1)); pc+=2; break;
             //HTHL
         case 0xe3: tmp1=mem.read(sp); mem.write(sp, reg[0x05]); reg[0x05]=tmp1; tmp2=mem.read(sp+1); mem.write(sp+1, reg[0x04]); reg[0x04]=tmp2; pc++; break;
             //XCHG
